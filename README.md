@@ -2,6 +2,8 @@
 
 Claude Code と Codex のローカルセッションを Git worktree ごとに表示する TypeScript + Ink のプロトタイプです。macOS と Node.js 22 以上を対象にします。
 
+![agenttop のデモ画面](docs/images/demo.png)
+
 ```sh
 pnpm install
 pnpm build

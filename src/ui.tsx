@@ -2,6 +2,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Text, useApp, useInput, useStdout} from 'ink';
 import {discoverSessions} from './discovery.js';
+import {demoRows} from './demo.js';
 import {gitInfo, type GitInfo} from './git.js';
 import {displayedStatus, sessionKey, type AgentSession} from './model.js';
 import {readSessions} from './storage.js';
@@ -23,26 +24,29 @@ function merge(observed: Map<string, AgentSession>, discovered: Map<string, Agen
   return [...all.values()].filter(session => Date.parse(session.updatedAt) > Date.now() - 86_400_000);
 }
 
-export function Dashboard(): React.JSX.Element {
+export function Dashboard({demo = false}: {demo?: boolean}): React.JSX.Element {
   const {exit} = useApp();
   const {stdout} = useStdout();
   const [discovered, setDiscovered] = useState(new Map<string, AgentSession>());
-  const [sessions, setSessions] = useState<AgentSession[]>(() => merge(readSessions(), new Map()));
+  const [sessions, setSessions] = useState<AgentSession[]>(() => demo ? [] : merge(readSessions(), new Map()));
   const [selected, setSelected] = useState(0);
   const [detail, setDetail] = useState(false);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
+    if (demo) return;
     let active = true;
     discoverSessions().then(value => { if (active) setDiscovered(value); });
     return () => { active = false; };
-  }, []);
+  }, [demo]);
   useEffect(() => {
+    if (demo) return;
     const refresh = () => { setSessions(merge(readSessions(), discovered)); setNow(Date.now()); };
     refresh();
     const timer = setInterval(refresh, 2000);
     return () => clearInterval(timer);
-  }, [discovered]);
+  }, [demo, discovered]);
   const rows = useMemo<Row[]>(() => {
+    if (demo) return demoRows(new Date(now));
     const cache = new Map<string, GitInfo | undefined>();
     return sessions.map(session => {
       if (!cache.has(session.cwd)) cache.set(session.cwd, gitInfo(session.cwd));
@@ -52,7 +56,7 @@ export function Dashboard(): React.JSX.Element {
       const bName = `${b.git?.repo || '~'}/${b.git?.worktree || b.session.cwd}`;
       return aName.localeCompare(bName) || b.session.updatedAt.localeCompare(a.session.updatedAt);
     });
-  }, [sessions]);
+  }, [demo, now, sessions]);
   useInput((input, key) => {
     if (input === 'q') exit();
     else if (key.escape) setDetail(false);
@@ -72,7 +76,7 @@ export function Dashboard(): React.JSX.Element {
   const start = Math.max(0, index - maxRows + 1);
   const visible = rows.slice(start, start + maxRows);
   return <Box flexDirection="column" paddingX={1}>
-    <Text bold color="magenta">agenttop</Text>
+    <Text bold color="magenta">agenttop{demo ? ' · demo' : ''}</Text>
     <Text dimColor>{rows.length} sessions  ↑↓ select  Enter details  Esc back  q quit</Text>
     <Box>
       <Box width={projectWidth} marginRight={1}><Text dimColor>PROJECT</Text></Box>

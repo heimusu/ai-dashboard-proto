@@ -72,7 +72,11 @@ async function main(): Promise<void> {
     return;
   }
   if (command === '--help' || command === 'help') {
-    process.stdout.write('agenttop [setup|doctor|emit --provider claude|codex]\n');
+    process.stdout.write('agenttop [--demo|setup|doctor|emit --provider claude|codex]\n');
+    return;
+  }
+  if (command === '--demo') {
+    render(<Dashboard demo />);
     return;
   }
   if (command) throw new Error(`Unknown command: ${command}`);
